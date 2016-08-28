@@ -1,0 +1,25 @@
+CREATE STREAM TABLE tmall_trade_detail (
+	order_num                   BIGINT,
+	buyer_id             BIGINT,
+	seller_id            BIGINT,
+	order_date               BIGINT,
+	price               DOUBLE
+);
+--- 声明结果表
+CREATE RESULT TABLE tmall_trade_state (
+	order_date                STRING,
+	trade_count            BIGINT,
+	trade_sum              DOUBLE,
+	PRIMARY KEY (order_date)
+);
+
+--- 按天聚合计算当天交易笔数、交易总金额
+REPLACE INTO tmall_trade_state
+    SELECT
+        FROM_UNIXTIME(FLOOR(tmall_trade_detail.order_date/1000), 'yyyy-MM-dd') as gmt_date,
+        COUNT(order_num) as trade_count,
+        SUM(price) as trade_sum
+    FROM
+        tmall_trade_detail
+    GROUP BY
+        FROM_UNIXTIME(FLOOR(tmall_trade_detail.order_date/1000), 'yyyy-MM-dd');
